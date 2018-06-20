@@ -179,6 +179,10 @@ def run_thread():
     get_thread.start()
 
 
+def init():
+    run_thread()
+
+
 def get():
     return values
 
