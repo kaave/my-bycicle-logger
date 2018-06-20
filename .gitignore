@@ -243,3 +243,5 @@ $RECYCLE.BIN/
 # End of https://www.gitignore.io/api/osx,linux,windows,python,vim,emacs
 
 /.vscode
+/csv/*
+!/csv/.gitkeep
