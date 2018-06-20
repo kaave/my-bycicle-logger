@@ -1,4 +1,8 @@
 from smbus2 import SMBus
+from threading import Thread
+from time import sleep
+
+values = {'temperature': 15.0, 'pressure': 1000, 'humidity': 50.0}
 
 
 def get_dig_temperature(calib):
@@ -144,34 +148,40 @@ def setup(i2c_address, bus):
 
 
 def get_data_bme280():
+    global values
+
     i2c_address = 0x76
     bus_number = 1
     bus = SMBus(bus_number)
-
     setup(i2c_address, bus)
+
     digs = get_calib_param(i2c_address, bus)
     data = []
 
-    for i in range(0xF7, 0xF7 + 8):
-        data.append(bus.read_byte_data(i2c_address, i))
-    pres_raw = (data[0] << 12) | (data[1] << 4) | (data[2] >> 4)
-    temp_raw = (data[3] << 12) | (data[4] << 4) | (data[5] >> 4)
-    hum_raw = (data[6] << 8) | data[7]
+    while True:
+        for i in range(0xF7, 0xF7 + 8):
+            data.append(bus.read_byte_data(i2c_address, i))
+        pres_raw = (data[0] << 12) | (data[1] << 4) | (data[2] >> 4)
+        temp_raw = (data[3] << 12) | (data[4] << 4) | (data[5] >> 4)
+        hum_raw = (data[6] << 8) | data[7]
 
-    temp, t_fine = get_temp(digs['temperture'], temp_raw)
-    pressure = get_pressure(digs['pressure'], pres_raw, t_fine)
-    humid = get_humid(digs['humidity'], hum_raw, t_fine)
+        temp, t_fine = get_temp(digs['temperture'], temp_raw)
+        pressure = get_pressure(digs['pressure'], pres_raw, t_fine)
+        humid = get_humid(digs['humidity'], hum_raw, t_fine)
 
-    return temp, humid, pressure
+        values = {'temperature': temp, 'pressure': pressure, 'humidity': humid}
+        sleep(1)
 
 
-def main():
-    temp, humid, pressure = get_data_bme280()
+def run_thread():
+    get_thread = Thread(target=get_data_bme280, args=())
+    get_thread.daemon = True
+    get_thread.start()
 
-    print("Temp:", temp)
-    print("Humid:", humid)
-    print("Pressure:", pressure)
+
+def get():
+    return values
 
 
 if __name__ == '__main__':
-    main()
+    print(get())
